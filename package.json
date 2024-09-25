@@ -1,0 +1,19 @@
+{
+  "name": "bookmandala-server",
+  "version": "1.0.0",
+  "description": "Server for bookMandala website",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sanikant20/bookMandala-Server.git"
+  },
+  "author": "Sanikant Kushwaha",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/sanikant20/bookMandala-Server/issues"
+  },
+  "homepage": "https://github.com/sanikant20/bookMandala-Server#readme"
+}
