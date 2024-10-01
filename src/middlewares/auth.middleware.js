@@ -4,14 +4,14 @@ import jwt from "jsonwebtoken"
 
 export const verifyToken = async (req, res, next) => {
     try {
-        const token = req.cookie?.refreshToken || req.headers["Authorization"]?.replace("Bearer ", "")
+        const token = req.cookie?.accessToken || req.headers["Authorization"]?.replace("Bearer ", "")
         if (!token) {
-            throw new ApiError(401, " Unauthorized token")
+            res.status(401).json({ message: "Unauthorized" });
         }
 
-        const decodedToken = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET)
-      
-        const user = await User.findById(decodedToken._id).select("-password -refreshToken")
+        const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET)
+
+        const user = await User.findById(decodedToken._id).select("-password -accessToken")
         if (!user) {
             throw new ApiError(404, "Invalid ! user not found")
         }
@@ -19,6 +19,6 @@ export const verifyToken = async (req, res, next) => {
         req.user = user
         next()
     } catch (error) {
-        throw new ApiError(401, error.message || "Invalid token")
+        res.status(401).json({ message: "Unauthorized" });
     }
 }

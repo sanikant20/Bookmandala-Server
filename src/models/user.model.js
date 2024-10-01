@@ -22,15 +22,14 @@ const userSchema = new Schema(
         },
         avatar: {
             type: String,
-            required: true
+            // required: true
         },
         dob: {
             type: Date,
-            required: true
         },
         gender: {
             type: String,
-            required: true,
+            // required: true,
             enum: ["Male", "Female", "Others"]
         },
         password: {
@@ -40,7 +39,7 @@ const userSchema = new Schema(
         shippingAddress: {
             type: String
         },
-        refreshToken: {
+        accessToken: {
             type: String
         }
     },
@@ -62,14 +61,16 @@ userSchema.methods.isPasswordCorrect = async function (password) {
 };
 
 // Generate Refresh Token
-userSchema.methods.generateRefreshToken = function () {
+userSchema.methods.generateAccessToken = function () {
     return jwt.sign(
         {
-            _id: this._id
+            _id: this._id,
+            fullname: this.fullname,
+            email: this.email
         },
-        process.env.REFRESH_TOKEN_SECRET,
+        process.env.ACCESS_TOKEN_SECRET,
         {
-            expiresIn: process.env.REFRESH_TOKEN_EXPIRY
+            expiresIn: process.env.ACCESS_TOKEN_EXPIRY
         }
     )
 };
