@@ -5,17 +5,17 @@ import { User } from "../models/user.model.js"
 import { uploadOnCloudinary } from "../utils/cloudinary.js"
 
 
-// Generate RefreshToken
-const generateRefreshTokens = async (userId) => {
+// Generate AccessToken
+const generateAccessTokens = async (userId) => {
     const user = await User.findById(userId)
 
-    const refreshToken = await user.generateRefreshToken()
+    const accessToken = await user.generateAccessToken()
 
-    // Save Refresh Token
-    user.refreshToken = refreshToken
+    // Save Access Token
+    user.accessToken = accessToken
     await user.save({ validateBeforeSave: false })
 
-    return { refreshToken }
+    return { accessToken }
 }
 
 // 
@@ -101,155 +101,175 @@ const login = asyncHandler(async (req, res) => {
     }
 
     // Generate refresh token for the user
-    const { refreshToken } = await generateRefreshTokens(user._id);
+    const { accessToken } = await generateAccessTokens(user._id);
 
-    const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
+    const loggedInUser = await User.findById(user._id).select("-password -accessToken")
 
     return res
         .status(200)
-        .cookie("refreshToken", refreshToken, options)
-        .json(new ApiResponse(200, { user: loggedInUser, "refreshToken": refreshToken }, "Login successfully"))
+        .cookie("accessToken", accessToken, options)
+        .json(new ApiResponse(200, { user: loggedInUser, "accessToken": accessToken }, "Login successfully"))
 })
 
 // logout Controller
 const logout = asyncHandler(async (req, res) => {
-    const { _id: userId } = req.user
-    if (!userId) {
-        throw new ApiError(400, "User is not logged in.")
-    }
-
-    const user = await User.findByIdAndUpdate(userId,
-        {
-            $unset: {
-                refreshToken: 1
-            }
-        },
-        {
-            new: true
+    try {
+        const { _id: userId } = req.user
+        if (!userId) {
+            throw new ApiError(400, "User is not logged in.")
         }
-    )
-    if (!user) {
-        throw new ApiError(500, "Something went wrong while logging out.")
+
+        const user = await User.findByIdAndUpdate(userId,
+            {
+                $unset: {
+                    accessToken: 1
+                }
+            },
+            {
+                new: true
+            }
+        )
+        if (!user) {
+            throw new ApiError(500, "Something went wrong while logging out.")
+        }
+
+        return res
+            .status(200)
+            .clearCookie("accessToken", options)
+            .json(new ApiResponse(200, {}, "Logout successfully"))
+
+    } catch (error) {
+        return console.log(error.statusCode, error.message)
     }
-
-    return res
-        .status(200)
-        .clearCookie("refreshToken", options)
-        .json(new ApiResponse(200, {}, "Logout successfully"))
-
 })
 
 // Get Current User Controller
 const getCurrentUser = asyncHandler(async (req, res) => {
-    const { _id: userId } = req.user
-    if (!userId) {
-        throw new ApiError(400, "User is not logged in.")
-    }
+    try {
+        const { _id: userId } = req.user
+        if (!userId) {
+            throw new ApiError(400, "User is not logged in.")
+        }
 
-    const user = await User.findById(userId)
-    if (!user) {
-        throw new ApiError(404, "User not found.")
-    }
+        const user = await User.findById(userId)
+        if (!user) {
+            throw new ApiError(404, "User not found.")
+        }
 
-    return res.status(200).json(new ApiResponse(200, user, "User retrieved successfully."))
+        return res.status(200).json(new ApiResponse(200, user, "User retrieved successfully."))
+
+    } catch (error) {
+        return console.log(error.statusCode, error.message)
+    }
 })
 
 // Edit User Data Controller
 const editUserData = asyncHandler(async (req, res) => {
-    const { _id: userId } = req.user
-    if (!userId) {
-        throw new ApiError(400, "User is not logged in.")
-    }
-
-    const { fullname, phoneNumber, dob, gender, shippingAddress } = req.body
-
-    const user = await User.findByIdAndUpdate(userId,
-        {
-            $set: {
-                fullname: fullname,
-                phoneNumber: phoneNumber,
-                dob: dob,
-                gender: gender,
-                shippingAddress: shippingAddress
-            }
-        },
-        {
-            new: true
+    try {
+        const { _id: userId } = req.user
+        if (!userId) {
+            throw new ApiError(400, "User is not logged in.")
         }
-    ).select("-password -email")
-    if (!user) {
-        throw new ApiError(500, "Something went wrong while updating user data.")
-    }
 
-    return res.status(200).json(new ApiResponse(200, user, "User data updated successfully."))
+        const { fullname, phoneNumber, dob, gender, shippingAddress } = req.body
+
+        const user = await User.findByIdAndUpdate(userId,
+            {
+                $set: {
+                    fullname: fullname,
+                    phoneNumber: phoneNumber,
+                    dob: dob,
+                    gender: gender,
+                    shippingAddress: shippingAddress
+                }
+            },
+            {
+                new: true
+            }
+        ).select("-password -email")
+        if (!user) {
+            throw new ApiError(500, "Something went wrong while updating user data.")
+        }
+
+        return res.status(200).json(new ApiResponse(200, user, "User data updated successfully."))
+    } catch (error) {
+        return res.status(error.statusCode || 500).json(new ApiError(500, error.message));
+    }
 })
 
 // Update Avatar Controller
 const updateAvatar = asyncHandler(async (req, res) => {
-    const { _id: userId } = req.user
-    if (!userId) {
-        throw new ApiError(400, "User is not logged in.")
-    }
-
-    const avatarLocalFilepath = await req.file?.path
-    if (!avatarLocalFilepath) {
-        throw new ApiError(400, "Avatar is required for updating avatar.")
-    }
-
-    const cloudAvatar = await uploadOnCloudinary(avatarLocalFilepath)
-    if (!cloudAvatar) {
-        throw new ApiError(400, "Failed to upload avatar on cloudinary.")
-    }
-
-    const user = await User.findByIdAndUpdate(userId,
-        {
-            $set: {
-                avatar: cloudAvatar.url
-            }
-        },
-        {
-            new: true
+    try {
+        const { _id: userId } = req.user
+        if (!userId) {
+            throw new ApiError(400, "User is not logged in.")
         }
-    )
-    if (!user) {
-        throw new ApiError(500, "Something went wrong while updating avatar.")
-    }
 
-    return res.status(200).json(new ApiResponse(200, user, "Avatar updated successfully."))
+        const avatarLocalFilepath = await req.file?.path
+        if (!avatarLocalFilepath) {
+            throw new ApiError(400, "Avatar is required for updating avatar.")
+        }
+
+        const cloudAvatar = await uploadOnCloudinary(avatarLocalFilepath)
+        if (!cloudAvatar) {
+            throw new ApiError(400, "Failed to upload avatar on cloudinary.")
+        }
+
+        const user = await User.findByIdAndUpdate(userId,
+            {
+                $set: {
+                    avatar: cloudAvatar.url
+                }
+            },
+            {
+                new: true
+            }
+        )
+        if (!user) {
+            throw new ApiError(500, "Something went wrong while updating avatar.")
+        }
+
+        return res.status(200).json(new ApiResponse(200, user, "Avatar updated successfully."))
+    } catch (error) {
+        return res.status(error.statusCode || 500).json(new ApiError(500, error.message));
+    }
 })
 
 // Change Password Controller
 const changePassword = asyncHandler(async (req, res) => {
-    const { oldPassword, newPassword, confirmNewPassword } = req.body
-    if (!(oldPassword && newPassword && confirmNewPassword)) {
-        throw new ApiError(400, "All fields are required.")
+    try {
+        const { oldPassword, newPassword, confirmNewPassword } = req.body
+        if (!(oldPassword && newPassword && confirmNewPassword)) {
+            throw new ApiError(400, "All fields are required.")
+        }
+        if (newPassword !== confirmNewPassword) {
+            throw new ApiError(400, "newPassword and confirmNewPassword does not match.")
+        }
+
+        const { _id: userId } = req.user
+        if (!userId) {
+            throw new ApiError(400, "User is not logged in.")
+        }
+
+
+        const user = await User.findById(userId)
+        if (!user) {
+            throw new ApiError(404, "User not found.")
+        }
+
+        const isOldPasswordCorrect = await user.isPasswordCorrect(oldPassword)
+        if (!isOldPasswordCorrect) {
+            throw new ApiError(400, "Old password is incorrect.")
+        }
+
+        user.password = newPassword
+        await user.save({ validateBeforeSave: false })
+
+        return res.status(200).json(new ApiResponse(200, user, "Password updated successfully."))
+    } catch (error) {
+        return res.status(error.statusCode || 500).json(new ApiError(500, error.message));
     }
-    if (newPassword !== confirmNewPassword) {
-        throw new ApiError(400, "newPassword and confirmNewPassword does not match.")
-    }
-
-    const { _id: userId } = req.user
-    if (!userId) {
-        throw new ApiError(400, "User is not logged in.")
-    }
-
-
-    const user = await User.findById(userId)
-    if (!user) {
-        throw new ApiError(404, "User not found.")
-    }
-
-    const isOldPasswordCorrect = await user.isPasswordCorrect(oldPassword)
-    if (!isOldPasswordCorrect) {
-        throw new ApiError(400, "Old password is incorrect.")
-    }
-
-    user.password = newPassword
-    await user.save({ validateBeforeSave: false })
-
-    return res.status(200).json(new ApiResponse(200, user, "Password updated successfully."))
 })
-
 
 
 // Export Controllers
