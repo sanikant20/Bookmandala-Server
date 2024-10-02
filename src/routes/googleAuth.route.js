@@ -4,7 +4,8 @@ import "../utils/google.js";
 import {
     loadAuth,
     successGoogleLogin,
-    failureGoogleLogin
+    failureGoogleLogin,
+    logout
 } from "../controllers/googleAuth.controller.js";
 
 const router = Router();
@@ -25,8 +26,10 @@ router.route("/auth/google/callback").get(passport.authenticate('google',
         failureRedirect: '/auth/google/failure'
     }
 ));
-router.route("/").get(loadAuth);
-router.route("/auth/google/success").get(successGoogleLogin);
-router.route("/auth/google/failure").get(failureGoogleLogin);
+router.route("/").post(loadAuth);
+router.route("/auth/google/success").post(successGoogleLogin);
+router.route("/auth/google/failure").post(failureGoogleLogin);
+router.route("/auth/google/logout").post(logout)
+
 
 export default router
