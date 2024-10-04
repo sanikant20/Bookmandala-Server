@@ -10,7 +10,18 @@ const genersSchema = new Schema(
       type: String,
       required: true,
     },
+    books: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Book",
+      },
+    ],
+    owner: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+    }
   },
+
   {
     timestamps: true,
   }
