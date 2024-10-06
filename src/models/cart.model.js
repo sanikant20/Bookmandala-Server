@@ -8,14 +8,20 @@ const cartSchema = new Schema({
     },
     books: [
         {
-            type: Schema.Types.ObjectId,
-            ref: "Book",
-            required: true
+            bookId: {
+                type: Schema.Types.ObjectId,
+                ref: "Book",
+                required: true
+            },
+            quantity: {
+                type: Number,
+                required: true
+            }
         }
     ],
     total: {
         type: Number
     }
-})
+});
 
-export const Cart = mongoose.model("Cart", cartSchema)
+export const Cart = mongoose.model("Cart", cartSchema);
