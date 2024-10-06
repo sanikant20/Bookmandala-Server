@@ -38,6 +38,8 @@ import genersRoutes from "./routes/geners.route.js";
 import googleAuthRoute from "./routes/googleAuth.route.js";
 import booksRoute from "./routes/books.route.js";
 import addToCart from "./routes/cart.route.js";
+import rateAndReview from "./routes/rateAndReview.route.js";
+
 
 // Route declearation
 app.use("/api/v1/check-server", checkServerRoutes);
@@ -46,6 +48,6 @@ app.use("/api/v1/geners", genersRoutes);
 app.use("/api/v1/google", googleAuthRoute); // Google Auth {http://localhost:8000/api/v1auth/google}
 app.use("/api/v1/books", booksRoute);
 app.use("/api/v1/cart", addToCart);
-
+app.use("/api/v1/rateAndReview", rateAndReview);
 
 export { app };
