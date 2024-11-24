@@ -37,9 +37,9 @@ import userRoutes from "./routes/user.route.js";
 import genersRoutes from "./routes/geners.route.js";
 import googleAuthRoute from "./routes/googleAuth.route.js";
 import booksRoute from "./routes/books.route.js";
-import addToCart from "./routes/cart.route.js";
-import rateAndReview from "./routes/rateAndReview.route.js";
-
+import addToCartRoute from "./routes/cart.route.js";
+import rateAndReviewRoute from "./routes/rateAndReview.route.js";
+import currencyRoute from "./routes/currency.route.js";
 
 // Route declearation
 app.use("/api/v1/check-server", checkServerRoutes);
@@ -47,7 +47,8 @@ app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/geners", genersRoutes);
 app.use("/api/v1/google", googleAuthRoute); // Google Auth {http://localhost:8000/api/v1auth/google}
 app.use("/api/v1/books", booksRoute);
-app.use("/api/v1/cart", addToCart);
-app.use("/api/v1/rateAndReview", rateAndReview);
+app.use("/api/v1/cart", addToCartRoute);
+app.use("/api/v1/rateAndReview", rateAndReviewRoute);
+app.use("/api/v1", currencyRoute);
 
 export { app };
