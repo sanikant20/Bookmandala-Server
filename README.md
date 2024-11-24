@@ -4,8 +4,6 @@ This server is created using NodeJS, ExpressJS, MongoDB, Mongoose, and Cloudinar
 ## Database Connection
 This server is connected to MongoDB using Mongoose.
 
-============================================================
-
 ## I have Completed APIs
 I have completed the following APIs in this project:
 
@@ -56,5 +54,3 @@ I have completed the following APIs in this project:
 
 ### Currency APIs
 *   API to convert currency
-
-===============================================================
