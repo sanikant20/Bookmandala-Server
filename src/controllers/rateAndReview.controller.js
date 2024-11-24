@@ -1,5 +1,4 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
-import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { Book } from "../models/book.model.js";
 import { RateAndReview } from "../models/rateAndReview.model.js";
@@ -8,21 +7,37 @@ import { RateAndReview } from "../models/rateAndReview.model.js";
 const addRateAndReview = asyncHandler(async (req, res) => {
     const { bookId } = req.params;
     if (!bookId) {
-        throw new ApiError(400, "BookId is required.");
+        return res.statusr(400).json({
+            success: false,
+            message: "BookId is required.",
+            error: null
+        });
     }
 
     const { _id: userId } = req.user;
     if (!userId) {
-        throw new ApiError(400, "User is not logged in.");
+        return res.statusr(400).json({
+            success: false,
+            message: "User is not logged in.",
+            error: null
+        });
     }
 
     // 
     const { rate, review } = req.body;
     if (!rate && !review) {
-        throw new ApiError(400, "Rate and review are required.");
+        return res.statusr(400).json({
+            success: false,
+            message: "Rate and review are required.",
+            error: null
+        });
     }
     if (rate < 1 || rate > 5) {
-        throw new ApiError(400, "Rate must be between 1 and 5.");
+        return res.statusr(400).json({
+            success: false,
+            message: "Rate must be between 1 and 5.",
+            error: null
+        });
     }
 
     // Check if user has already rated and reviewed the book
@@ -31,13 +46,21 @@ const addRateAndReview = asyncHandler(async (req, res) => {
         rateAndReview: { $elemMatch: { bookId } }
     });
     if (existingUserRateAndReview) {
-        throw new ApiError(400, "You have already rated and reviewed this book.");
+        return res.statusr(400).json({
+            success: false,
+            message: "You have already rated and reviewed this book.",
+            error: null
+        });
     }
 
     // Check if book exists
     const bookData = await Book.findById(bookId);
     if (!bookData) {
-        throw new ApiError(400, "Invalid bookId.");
+        return res.statusr(400).json({
+            success: false,
+            message: "Book not found.",
+            error: null
+        });
     }
 
     // Check if user already rated and reviewed the book
@@ -65,16 +88,17 @@ const addRateAndReview = asyncHandler(async (req, res) => {
         await existingUser.save();
         return res.status(200).json(new ApiResponse(200, existingUser, "Rate and review added successfully."));
     }
-
 })
 
 // Get Rate and Review for a Book
 const getRateAndReviewForBook = asyncHandler(async (req, res) => {
     const { bookId } = req.params;
-
-    // Ensure bookId is provided
     if (!bookId) {
-        throw new ApiError(400, "BookId is required.");
+        return res.statusr(400).json({
+            success: false,
+            message: "BookId is required.",
+            error: null
+        });
     }
 
     // Find rate and reviews for the given bookId and populate the user details
@@ -108,12 +132,20 @@ const getRateAndReviewForBook = asyncHandler(async (req, res) => {
 const editRateAndReview = asyncHandler(async (req, res) => {
     const { bookId } = req.params;
     if (!bookId) {
-        throw new ApiError(400, "BookId is required.");
+        return res.statusr(400).json({
+            success: false,
+            message: "BookId is required.",
+            error: null
+        });
     }
 
     const { _id: userId } = req.user;
     if (!userId) {
-        throw new ApiError(400, "User is not logged in.");
+        return res.statusr(400).json({
+            success: false,
+            message: "User is not logged in.",
+            error: null
+        });
     }
 
     // Check if user has already rated and reviewed the book
@@ -122,15 +154,27 @@ const editRateAndReview = asyncHandler(async (req, res) => {
         "rateAndReview.bookId": bookId
     });
     if (!existingBookRateAndReview) {
-        throw new ApiError(400, "No rate and review exists for this book.");
+        return res.statusr(400).json({
+            success: false,
+            message: `No rate and review exists for this UserId: ${userId} and BookId: ${bookId}.`,
+            error: null
+        });
     }
 
     const { rate, review } = req.body;
     if (!rate && !review) {
-        throw new ApiError(400, "Rate and review are required.");
+        return res.statusr(400).json({
+            success: false,
+            message: "Rate and review are required.",
+            error: null
+        });
     }
     if (rate < 1 || rate > 5) {
-        throw new ApiError(400, "Rate must be between 1 and 5.");
+        return res.statusr(400).json({
+            success: false,
+            message: "Rate must be between 1 and 5.",
+            error: null
+        });
     }
 
     // Use positional operator ($) to update the specific entry in the rateAndReview array
@@ -151,7 +195,11 @@ const editRateAndReview = asyncHandler(async (req, res) => {
     );
 
     if (!updatedBookRateAndReview) {
-        throw new ApiError(400, "Failed to update rate and review.");
+        return res.statusr(400).json({
+            success: false,
+            message: "Failed to update rate and review.",
+            error: null
+        });
     }
 
     return res.status(200).json(new ApiResponse(200, updatedBookRateAndReview, "Rate and review updated successfully."));
@@ -161,12 +209,20 @@ const editRateAndReview = asyncHandler(async (req, res) => {
 const deleteRateAndReview = asyncHandler(async (req, res) => {
     const { bookId } = req.params;
     if (!bookId) {
-        throw new ApiError(400, "BookId is required.");
+        return res.statusr(400).json({
+            success: false,
+            message: "BookId is required.",
+            error: null
+        });
     }
 
     const { _id: userId } = req.user;
     if (!userId) {
-        throw new ApiError(400, "User is not logged in.");
+        return res.statusr(400).json({
+            success: false,
+            message: "User is not logged in.",
+            error: null
+        });
     }
 
     // Check if user has already rated and reviewed the book
@@ -176,9 +232,11 @@ const deleteRateAndReview = asyncHandler(async (req, res) => {
     });
 
     if (!existingBookRateAndReview) {
-        throw new ApiError(400,
-            `No rate and review exists for this UserId: ${userId} and BookId: ${bookId}.`
-        );
+        return res.statusr(400).json({
+            success: false,
+            message: `No rate and review exists for this UserId: ${userId} and BookId: ${bookId}.`,
+            error: null
+        })
     }
 
     // $pull to remove the specific entry in the rateAndReview array
@@ -190,15 +248,19 @@ const deleteRateAndReview = asyncHandler(async (req, res) => {
         {
             $pull: {
                 rateAndReview: { bookId }
-            } // Remove the entry with the matching bookId
+            }
         },
         {
-            new: true // Return the updated document
+            new: true
         }
     );
 
     if (!updatedBookRateAndReview) {
-        throw new ApiError(400, "Failed to delete rate and review.");
+        return res.statusr(400).json({
+            success: false,
+            message: "Failed to delete rate and review.",
+            error: null
+        });
     }
 
     return res.status(200).json(new ApiResponse(200, updatedBookRateAndReview, "Rate and review deleted successfully."));

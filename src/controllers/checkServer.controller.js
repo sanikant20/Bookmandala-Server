@@ -1,10 +1,17 @@
-import { ApiResponse } from "../utils/ApiResponse.js"
 import { asyncHandler } from "../utils/asyncHandler.js"
 
 export const checkServer = asyncHandler(async (req, res) => {
     try {
-        return res.status(200).json(new ApiResponse(200, {}, "Server is up and running."))
+        return res.status(200).json({
+            success: true,
+            message: "Server is up and running.",
+            error: null
+        })
     } catch (error) {
-        return res.status(error.statusCode || 500).json(new ApiResponse(500, error.message));
+        return res.status(error.statusCode || 500).json({
+            success: false,
+            message: error.message || "Something went wrong while checking server.",
+            error: "Internal server error"
+        });
     }
 })

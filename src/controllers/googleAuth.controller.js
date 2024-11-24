@@ -1,5 +1,4 @@
 import { User } from "../models/user.model.js";
-import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
@@ -30,7 +29,11 @@ const successGoogleLogin = asyncHandler(async (req, res) => {
       console.log("User created: ", user);
     } catch (err) {
       console.error("Error creating user: ", err);
-      return res.status(500).json(new ApiError(500, {}, "Failed to create user"));
+      return res.status(500).json({
+        success: false,
+        message: "Failed to create user. Please try again.",
+        error: "Internal server error",
+      });
     }
   }
 

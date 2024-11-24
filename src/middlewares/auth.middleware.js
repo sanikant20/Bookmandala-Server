@@ -1,5 +1,4 @@
 import { User } from "../models/user.model.js";
-import { ApiError } from "../utils/ApiError.js";
 import jwt from "jsonwebtoken";
 
 export const verifyToken = async (req, res, next) => {
@@ -8,7 +7,11 @@ export const verifyToken = async (req, res, next) => {
       req.cookies?.accessToken || req.headers["authorization"]?.replace("Bearer ", "");
 
     if (!token) {
-      res.status(401).json({ message: "Unauthorized" });
+      return res.status(401).json({
+        success: false,
+        message: "User is not logged in.",
+        error: "Unauthorized"
+      });
     }
 
     // Verify the token using the refresh token secret
@@ -19,22 +22,37 @@ export const verifyToken = async (req, res, next) => {
 
     // Check if user exists
     if (!user) {
-      throw new ApiError(404, "User not found.");
+      return res.status(401).json({
+        success: false,
+        message: "User not found.",
+        error: "Unauthorized"
+      })
     }
 
     // Attach user to request object for further use
     req.user = user;
-
     // Proceed to the next middleware
     next();
   } catch (error) {
     // Differentiate between token expiration and other errors
     if (error.name === "TokenExpiredError") {
-      throw new ApiError(401, "Token has expired.");
+      return res.status(401).json({
+        success: false,
+        message: "Token has expired.",
+        error: "Unauthorized"
+      })
     } else if (error.name === "JsonWebTokenError") {
-      throw new ApiError(401, "User is not logged in. ");
+      return res.status(401).json({
+        success: false,
+        message: "Invalid token.",
+        error: "Unauthorized"
+      })
     } else {
-      throw new ApiError(401, error.message || "Authentication failed.");
+      return res.status(500).json({
+        success: false,
+        message: "Something went wrong while verifying token.",
+        error: "Internal server error"
+      })
     }
   }
 };

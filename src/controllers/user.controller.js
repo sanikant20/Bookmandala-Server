@@ -1,5 +1,4 @@
 import { asyncHandler } from "../utils/asyncHandler.js"
-import { ApiError } from "../utils/ApiError.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
 import { User } from "../models/user.model.js"
 import { uploadOnCloudinary } from "../utils/cloudinary.js"
@@ -35,7 +34,11 @@ const register = asyncHandler(async (req, res) => {
     if (
         [fullname, email, phoneNumber, dob, gender, password].some((field) => field?.trim === "")
     ) {
-        throw new ApiError(404, "All fields are required.")
+        return res.status(400).json({
+            success: false,
+            message: "All fields are required.",
+            error: "Bad request"
+        })
     }
 
     const existedUser = await User.findOne(
@@ -44,22 +47,38 @@ const register = asyncHandler(async (req, res) => {
         }
     )
     if (existedUser) {
-        throw new ApiError(409, `User already exist with ${email}. Please enter another email.`)
+        return res.status(409).json({
+            success: false,
+            message: "User already exists.",
+            error: "Conflict"
+        })
     }
 
     const avatarFiles = req.files?.avatar;
     if (!avatarFiles || avatarFiles.length === 0) {
-        throw new ApiError(400, "Avatar is missing");
+        return res.status(400).json({
+            success: false,
+            message: "Avatar is required for registering.",
+            error: "Bad request"
+        })
     }
 
     const avatarLocalFilePath = avatarFiles[0].path;
     if (!avatarLocalFilePath) {
-        throw new ApiError(400, "Avatar file path is missing");
+        return res.status(400).json({
+            success: false,
+            message: "Avatar file path is required for registering.",
+            error: "Bad request"
+        })
     }
 
     const cloudAvatar = await uploadOnCloudinary(avatarLocalFilePath)
     if (!cloudAvatar) {
-        throw new ApiError(400, "Failed to upload avatar on cloudinary.")
+        return res.status(400).json({
+            success: false,
+            message: "Failed to upload avatar on cloudinary.",
+            error: "Bad request"
+        })
     }
 
     const user = await User.create(
@@ -76,7 +95,11 @@ const register = asyncHandler(async (req, res) => {
     )
     const userRegister = await User.findById(user._id).select("-password -refreshToken")
     if (!userRegister) {
-        throw new ApiError(500, "Something went wrong while user register")
+        return res.status(500).json({
+            success: false,
+            message: "Something went wrong while registering.",
+            error: "Internal server error"
+        })
     }
 
     return res.status(200).json(new ApiResponse(200, userRegister, "User register successfully."))
@@ -87,17 +110,29 @@ const register = asyncHandler(async (req, res) => {
 const login = asyncHandler(async (req, res) => {
     const { email, password } = req.body
     if (!(email || password)) {
-        throw new ApiError(400, "email and password are required.")
+        return res.status(400).json({
+            success: false,
+            message: "All fields are required.",
+            error: "Bad request"
+        })
     }
 
     const user = await User.findOne({ email })
     if (!user) {
-        throw new ApiError(404, "Invalid Email")
+        return res.status(404).json({
+            success: false,
+            message: "User not found.",
+            error: "Not found"
+        })
     }
 
     const isValidPassword = await user.isPasswordCorrect(password)
     if (!isValidPassword) {
-        throw new ApiError(404, "Invalid Password")
+        return res.status(404).json({
+            success: false,
+            message: "Invalid password.",
+            error: "Not found"
+        })
     }
 
     // Generate refresh token for the user
@@ -116,7 +151,11 @@ const logout = asyncHandler(async (req, res) => {
     try {
         const { _id: userId } = req.user
         if (!userId) {
-            throw new ApiError(400, "User is not logged in.")
+            return res.status(400).json({
+                success: false,
+                message: "User is not logged in.",
+                error: "Bad request"
+            })
         }
 
         const user = await User.findByIdAndUpdate(userId,
@@ -130,7 +169,11 @@ const logout = asyncHandler(async (req, res) => {
             }
         )
         if (!user) {
-            throw new ApiError(500, "Something went wrong while logging out.")
+            return res.status(500).json({
+                success: false,
+                message: "Something went wrong while logging out.",
+                error: "Internal server error"
+            })
         }
 
         return res
@@ -139,7 +182,11 @@ const logout = asyncHandler(async (req, res) => {
             .json(new ApiResponse(200, {}, "Logout successfully"))
 
     } catch (error) {
-        return console.log(error.statusCode, error.message)
+        return res.status(500).json({
+            success: false,
+            message: "Something went wrong while logging out.",
+            error: "Internal server error"
+        })
     }
 })
 
@@ -148,18 +195,30 @@ const getCurrentUser = asyncHandler(async (req, res) => {
     try {
         const { _id: userId } = req.user
         if (!userId) {
-            throw new ApiError(400, "User is not logged in.")
+            return res.status(400).json({
+                success: false,
+                message: "User is not logged in.",
+                error: "Bad request"
+            })
         }
 
         const user = await User.findById(userId)
         if (!user) {
-            throw new ApiError(404, "User not found.")
+            return res.status(404).json({
+                success: false,
+                message: "User not found.",
+                error: "Not found"
+            })
         }
 
         return res.status(200).json(new ApiResponse(200, user, "User retrieved successfully."))
 
     } catch (error) {
-        return console.log(error.statusCode, error.message)
+        return res.status(error.statusCode || 500).json({
+            success: false,
+            message: error.message || "Something went wrong while retrieving user.",
+            error: "Internal server error"
+        });
     }
 })
 
@@ -168,7 +227,11 @@ const editUserData = asyncHandler(async (req, res) => {
     try {
         const { _id: userId } = req.user
         if (!userId) {
-            throw new ApiError(400, "User is not logged in.")
+            return res.status(400).json({
+                success: false,
+                message: "User is not logged in.",
+                error: "Bad request"
+            })
         }
 
         const { fullname, phoneNumber, dob, gender, shippingAddress } = req.body
@@ -188,12 +251,19 @@ const editUserData = asyncHandler(async (req, res) => {
             }
         ).select("-password -email")
         if (!user) {
-            throw new ApiError(500, "Something went wrong while updating user data.")
+            return res.status(500).json({
+                success: false,
+                message: "Something went wrong while updating user data.",
+                error: "Internal server error"
+            })
         }
 
         return res.status(200).json(new ApiResponse(200, user, "User data updated successfully."))
     } catch (error) {
-        return res.status(error.statusCode || 500).json(new ApiError(500, error.message));
+        return res.status(error.statusCode || 500).json({
+            success: false,
+            message: error.message || "Something went wrong while updating user data.",
+            error: "Internal server error"});
     }
 })
 
@@ -202,17 +272,29 @@ const updateAvatar = asyncHandler(async (req, res) => {
     try {
         const { _id: userId } = req.user
         if (!userId) {
-            throw new ApiError(400, "User is not logged in.")
+            return res.status(400).json({
+                success: false,
+                message: "User is not logged in.",
+                error: "Bad request"
+            })
         }
 
         const avatarLocalFilepath = await req.file?.path
         if (!avatarLocalFilepath) {
-            throw new ApiError(400, "Avatar is required for updating avatar.")
+            return res.status(400).json({
+                success: false,
+                message: "Avatar is required.",
+                error: "Bad request"
+            })
         }
 
         const cloudAvatar = await uploadOnCloudinary(avatarLocalFilepath)
         if (!cloudAvatar) {
-            throw new ApiError(400, "Failed to upload avatar on cloudinary.")
+            return res.status(400).json({
+                success: false,
+                message: "Something went wrong while uploading avatar.",
+                error: "Bad request"
+            })
         }
 
         const user = await User.findByIdAndUpdate(userId,
@@ -226,12 +308,20 @@ const updateAvatar = asyncHandler(async (req, res) => {
             }
         )
         if (!user) {
-            throw new ApiError(500, "Something went wrong while updating avatar.")
+            return res.status(500).json({
+                success: false,
+                message: "Something went wrong while updating avatar.",
+                error: "Internal server error"
+            })
         }
 
         return res.status(200).json(new ApiResponse(200, user, "Avatar updated successfully."))
     } catch (error) {
-        return res.status(error.statusCode || 500).json(new ApiError(500, error.message));
+        return res.status(error.statusCode || 500).json({
+            success: false,
+            message: error.message || "Something went wrong while updating avatar.",
+            error: "Internal server error"
+        });
     }
 })
 
@@ -240,26 +330,46 @@ const changePassword = asyncHandler(async (req, res) => {
     try {
         const { oldPassword, newPassword, confirmNewPassword } = req.body
         if (!(oldPassword && newPassword && confirmNewPassword)) {
-            throw new ApiError(400, "All fields are required.")
+            return res.status(400).json({
+                success: false,
+                message: "All fields are required.",
+                error: "Bad request"
+            })
         }
         if (newPassword !== confirmNewPassword) {
-            throw new ApiError(400, "newPassword and confirmNewPassword does not match.")
+            return res.status(400).json({
+                success: false,
+                message: "New password and confirm password do not match.",
+                error: "Bad request"
+            })
         }
 
         const { _id: userId } = req.user
         if (!userId) {
-            throw new ApiError(400, "User is not logged in.")
+            return res.status(400).json({
+                success: false,
+                message: "User is not logged in.",
+                error: "Bad request"
+            })
         }
 
 
         const user = await User.findById(userId)
         if (!user) {
-            throw new ApiError(404, "User not found.")
+            return res.status(404).json({
+                success: false,
+                message: "User not found.",
+                error: "Not found"
+            })
         }
 
         const isOldPasswordCorrect = await user.isPasswordCorrect(oldPassword)
         if (!isOldPasswordCorrect) {
-            throw new ApiError(400, "Old password is incorrect.")
+            return res.status(400).json({
+                success: false,
+                message: "Old password is incorrect.",
+                error: "Bad request"
+            })
         }
 
         user.password = newPassword
@@ -267,7 +377,11 @@ const changePassword = asyncHandler(async (req, res) => {
 
         return res.status(200).json(new ApiResponse(200, user, "Password updated successfully."))
     } catch (error) {
-        return res.status(error.statusCode || 500).json(new ApiError(500, error.message));
+        return res.status(error.statusCode || 500).json({
+            success: false,
+            message: error.message || "Something went wrong while changing password.",
+            error: "Internal server error"
+        });
     }
 })
 

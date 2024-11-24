@@ -1,7 +1,6 @@
 import { Book } from "../models/book.model.js";
 import { Cart } from "../models/cart.model.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
-import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import mongoose from 'mongoose';
 
@@ -12,28 +11,48 @@ const addToCart = asyncHandler(async (req, res) => {
 
     // Validate bookId
     if (!mongoose.Types.ObjectId.isValid(bookId)) {
-        throw new ApiError(400, "Invalid bookId.");
+        return res.status(400).json({
+            success: false,
+            message: "Invalid bookId.",
+            error: "Bad request"
+        })
     }
     if (!bookId) {
-        throw new ApiError(400, "BookId is required.");
+        return res.status(400).json({
+            success: false,
+            message: "BookId is required.",
+            error: "Bad request"
+        })
     }
 
-    const { quantity } = req.body; // Get quantity from req.body
+    const { quantity } = req.body;
     console.log("quantity", quantity);
     if (!quantity || quantity < 1) {
-        throw new ApiError(400, "Quantity must be greater than 0.");
+        return res.status(400).json({
+            success: false,
+            message: "Quantity is required and should be greater than 0.",
+            error: "Bad request"
+        })
     }
 
 
-    const bookData = await Book.findById(bookId);    // Fetch the book details
+    const bookData = await Book.findById(bookId);
     if (!bookData) {
-        throw new ApiError(400, "Invalid bookId.");
+        return res.status(400).json({
+            success: false,
+            message: "Book not found.",
+            error: "Bad request"
+        });
     }
 
     // Check book availability
     if (bookData.quantity < quantity) {
-        throw new ApiError(400, `Insufficient book stock.
-             \nAvailable quantity is ${bookData.quantity} `);
+        return res.status(400).json({
+            success: false,
+            message: `Book is out of stock.
+            \nAvailable quantity is ${bookData.quantity} `,
+            error: "Bad request"
+        });
     }
 
     // Deduct the quantity from the book stock
@@ -43,13 +62,15 @@ const addToCart = asyncHandler(async (req, res) => {
     const { _id: userId } = req.user; // Get userId from req.user
     console.log("userId", userId);
     if (!userId) {
-        throw new ApiError(400, "User is not logged in.");
+        return res.status(400).json({
+            success: false,
+            message: "User is not logged in.",
+            error: "Bad request"
+        })
     }
 
     // Find or create the cart for the user
     let cartData = await Cart.findOne({ userId });
-    console.log("CartData", cartData);
-
     if (!cartData) {
         // If no cart exists, create a new cart
         const newCart = await Cart.create({
@@ -91,17 +112,29 @@ const getMyCartData = asyncHandler(async (req, res) => {
     try {
         const { _id: userId } = req.user
         if (!userId) {
-            throw new ApiError(400, "User is not logged in.")
+            return res.status(400).json({
+                success: false,
+                message: "User is not logged in.",
+                error: "Bad request"
+            })
         }
 
         const cartData = await Cart.findOne({ userId });
         if (!cartData) {
-            throw new ApiError(400, "Cart is Empty.")
+            return res.status(404).json({
+                success: true,
+                message: "Cart not found.",
+                error: "Not found"
+            })
         }
 
         return res.status(200).json(new ApiResponse(200, cartData, "Cart data fetched successfully."));
     } catch (error) {
-        return res.status(error.statusCode || 500).json(new ApiError(500, error.message));
+        return res.status(error.statusCode || 500).json({
+            success: false,
+            message: error.message || "Something went wrong while fetching cart data.",
+            error: "Internal server error"
+        });
     }
 })
 
@@ -113,27 +146,41 @@ const removeBookFromCart = asyncHandler(async (req, res) => {
 
     // Validate bookId
     if (!mongoose.Types.ObjectId.isValid(bookId)) {
-        throw new ApiError(400, "Invalid bookId.");
+        return res.status(400).json({
+            success: false,
+            message: "Invalid bookId.",
+            error: "Bad request"
+        })
     }
 
     // Find the user's cart
     const cart = await Cart.findOne({ userId });
-
     if (!cart) {
-        throw new ApiError(404, 'Cart not found');
+        return res.status(404).json({
+            success: false,
+            message: "Cart not found.",
+            error: "Not found"
+        })
     }
 
     // Find the index of the book in the cart
     const bookIndex = cart.books.findIndex(book => book.bookId.toString() === bookId);
-
     if (bookIndex === -1) {
-        throw new ApiError(404, 'Book not found in cart');
+        return res.status(404).json({
+            success: false,
+            message: "Book not found in cart.",
+            error: "Not found"
+        });
     }
 
     // Find the associated book in the Book collection
     const book = await Book.findById(bookId);
     if (!book) {
-        throw new ApiError(404, 'Book not found in database');
+        return res.status(404).json({
+            success: false,
+            message: "Book not found.",
+            error: "Not found"
+        });
     }
 
     // Restore the book's quantity back to stock

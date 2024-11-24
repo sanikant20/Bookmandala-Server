@@ -1,5 +1,4 @@
 import { Book } from "../models/book.model.js";
-import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
@@ -9,7 +8,11 @@ const addBooks = asyncHandler(async (req, res) => {
     // Get UserId from req.user
     const { _id: userId } = req.user
     if (!userId) {
-        throw new ApiError(400, "User is not logged in.")
+        return res.status(400).json({
+            success: false,
+            message: "User is not logged in.",
+            error: "Bad request"
+        })
     }
 
     // Get Book data from req.body
@@ -21,7 +24,11 @@ const addBooks = asyncHandler(async (req, res) => {
 
     // Fix for checking empty fields in body
     if ([title, author, price, quantity].some(field => !field || field.trim() === "")) {
-        throw new ApiError(400, "All fields are required.");
+        return res.status(400).json({
+            success: false,
+            message: "All fields are required.",
+            error: "Bad request"
+        })
     }
 
     // Check if same geners already have same book
@@ -32,19 +39,31 @@ const addBooks = asyncHandler(async (req, res) => {
         ]
     });
     if (existingBook) {
-        throw new ApiError(400, `This book already existed with \n Title: ${title}\n and \n Author: ${author}.`);
+        return res.status(400).json({
+            success: false,
+            message: `This book already existed with \n Title: ${title}\n and \n Author: ${author}.`,
+            error: "Bad request"
+        })
     }
 
     // Upload Cover Image
     const coverImageLocalFilePath = req.file?.path;
     if (!coverImageLocalFilePath) {
-        throw new ApiError(400, "Cover image is missing");
+        return res.status(400).json({
+            success: false,
+            message: "Cover image is required.",
+            error: "Bad request"
+        })
     }
 
     // Upload Cover Image to Cloudinary
     const cloudBookCoverImage = await uploadOnCloudinary(coverImageLocalFilePath);
     if (!cloudBookCoverImage) {
-        throw new ApiError(400, "Failed to upload book cover image on cloud.");
+        return res.status(400).json({
+            success: false,
+            message: "Something went wrong while uploading cover image.",
+            error: "Bad request"
+        });
     }
 
     // Create the book record in the database
@@ -63,7 +82,11 @@ const addBooks = asyncHandler(async (req, res) => {
         owner: userId
     });
     if (!books) {
-        throw new ApiError(500, "Something went wrong while adding books.");
+        return res.status(500).json({
+            success: false,
+            message: "Something went wrong while adding books.",
+            error: "Internal server error"
+        })
     }
 
     // Perform aggregation to get book with owner
@@ -102,7 +125,11 @@ const addBooks = asyncHandler(async (req, res) => {
         }
     ]);
     if (!bookWithOwner?.length) {
-        throw new ApiError(500, "Something went wrong while adding books with geners.");
+        return res.status(500).json({
+            success: false,
+            message: "Something went wrong while adding books with owner data.",
+            error: "Internal server error"
+        });
     }
 
     // Return the response
@@ -115,7 +142,11 @@ const addBooks = asyncHandler(async (req, res) => {
 const getAllBooks = asyncHandler(async (req, res) => {
     const books = await Book.find();
     if (books?.length === 0) {
-        throw new ApiError(400, "No books found.");
+        return res.status(400).json({
+            success: false,
+            message: "No books found.",
+            error: "Bad request"
+        })
     }
 
     return res.status(200).json(new ApiResponse(200, books, "Books fetched successfully."));
@@ -125,12 +156,20 @@ const getAllBooks = asyncHandler(async (req, res) => {
 const getBookById = asyncHandler(async (req, res) => {
     const { bookId } = req.params
     if (!bookId) {
-        throw new ApiError(400, "BookId is required.")
+        return res.status(400).json({
+            success: false,
+            message: "BookId is required.",
+            error: "Bad request"
+        })
     }
 
     const bookData = await Book.findById(bookId)
     if (!bookData) {
-        throw new ApiError(400, "Invalid bookId.")
+        return res.status(400).json({
+            success: false,
+            message: "Book not found.",
+            error: "Bad request"
+        })
     }
 
     return res.status(200).json(new ApiResponse(200, bookData, "Book fetched successfully."));
@@ -140,15 +179,27 @@ const getBookById = asyncHandler(async (req, res) => {
 const deleteBook = asyncHandler(async (req, res) => {
     const { bookId } = req.params
     if (!bookId) {
-        throw new ApiError(400, "BookId is required.")
+        return res.status(400).json({
+            success: false,
+            message: "BookId is required.",
+            error: "Bad request"
+        })
     }
     const bookData = await Book.findById(bookId)
     if (!bookData) {
-        throw new ApiError(400, "Invalid bookId.")
+        return res.status(400).json({
+            success: false,
+            message: "Book not found.",
+            error: "Bad request"
+        })
     }
     const deletedBook = await Book.findByIdAndDelete(bookId)
     if (!deletedBook) {
-        throw new ApiError(500, "Something went wrong while deleting book.")
+        return res.status(500).json({
+            success: false,
+            message: "Something went wrong while deleting book.",
+            error: "Internal server error"
+        })
     }
     return res.status(200).json(new ApiResponse(200, deletedBook, "Book deleted successfully."));
 })
@@ -157,12 +208,16 @@ const deleteBook = asyncHandler(async (req, res) => {
 const updateBooksDetails = asyncHandler(async (req, res) => {
     const { bookId } = req.params;
     if (!bookId) {
-        throw new ApiError(400, "BookId is required.");
+        return res.status(400);
     }
 
     const bookData = await Book.findById(bookId);
     if (!bookData) {
-        throw new ApiError(400, "Invalid bookId.");
+        return res.status(400).json({
+            success: false,
+            message: "Book not found.",
+            error: "Bad request"
+        })
     }
 
     // Destructure book details from req.body
@@ -192,7 +247,11 @@ const updateBooksDetails = asyncHandler(async (req, res) => {
         // Upload the cover image to Cloudinary
         const cloudBookCoverImage = await uploadOnCloudinary(coverImageLocalFilePath);
         if (!cloudBookCoverImage) {
-            throw new ApiError(400, "Failed to upload book cover image on cloud.");
+            return res.status(400).json({
+                success: false,
+                message: "Something went wrong while uploading cover image.",
+                error: "Bad request"
+            });
         }
 
         // Add the uploaded cover image URL to the update fields
@@ -208,7 +267,11 @@ const updateBooksDetails = asyncHandler(async (req, res) => {
     );
 
     if (!updatedBook) {
-        throw new ApiError(500, "Something went wrong while updating book details.");
+        return res.status(500).json({
+            success: false,
+            message: "Something went wrong while updating book details.",
+            error: "Internal server error"
+        });
     }
 
     // Return the updated book data
@@ -220,7 +283,11 @@ const searchBook = asyncHandler(async (req, res) => {
     const { query } = req.query
 
     if (!query) {
-        throw new ApiError(400, "Query is required.")
+        return res.status(400).json({
+            success: false,
+            message: "Enter book name or price or author.",
+            error: "Bad request"
+        })
     }
 
     const searchQuery = query.trim();
@@ -233,7 +300,11 @@ const searchBook = asyncHandler(async (req, res) => {
     })
 
     if (!bookData.length) {
-        return res.status(200).json(new ApiResponse(200, {}, `No result for ${query}.`))
+        return res.status(200).json({
+            success: false,
+            message: "No books found.",
+            error: "Bad request"
+        })
     }
     return res.status(200).json(new ApiResponse(200, bookData, "Books fetched successfully."));
 })
