@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Currency Converter</title>
+    <style>
+      /* Global styles */
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f0f2f5;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+      }
+
+      h1 {
+        color: #333;
+        margin-bottom: 20px;
+        font-size: 32px;
+      }
+
+      #toggleCurrency {
+        background-color: #007bff;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        margin-bottom: 20px;
+        transition: background-color 0.3s ease;
+      }
+
+      #toggleCurrency:hover {
+        background-color: #0056b3;
+      }
+
+      /* Loading message */
+      #loading {
+        font-size: 18px;
+        color: #555;
+        margin-bottom: 20px;
+        font-style: italic;
+      }
+
+      /* Book list styling */
+      .book-list {
+        display: flex;
+        flex-wrap: wrap;
+        flex-direction: column;
+        
+        justify-content: center;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0;
+      }
+
+      /* Individual book card styling */
+      .book-item {
+        background-color: white;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        margin: 15px;
+        padding: 20px;
+        width: 250px;
+        text-align: center;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .book-item:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+      }
+
+      .book-item img {
+        width: 100%;
+        height: auto;
+        border-radius: 5px;
+        margin-bottom: 15px;
+      }
+
+      .book-item h2 {
+        font-size: 20px;
+        margin: 0 0 10px;
+        color: #333;
+      }
+
+      .book-item p {
+        margin: 5px 0;
+        color: #666;
+        font-size: 14px;
+      }
+
+      /* Responsive Design */
+      @media (max-width: 768px) {
+        .book-item {
+          width: 200px;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .book-item {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <h1>Book Store</h1>
+    <button id="toggleCurrency">Convert to <%= currency === "NPR" ? "USD" : "NPR" %></button>
+    <div id="loading" style="display: none;">Loading...</div>
+    <div class="book-list" id="bookList">
+      <% books.forEach((book) => { %>
+      <div class="book-item">
+        <h2><%= book.title %></h2>
+        <p><strong>Author:</strong> <%= book.author %></p>
+        <p><strong>Year:</strong> <%= book.year %></p>
+        <p><strong>Price:</strong> <%= currency %> <%= book.price %></p>
+      </div>
+      <% }) %>
+    </div>
+
+    <script>
+      // Add toggle currency functionality
+      document.getElementById("toggleCurrency").addEventListener("click", function () {
+        // Show loading spinner
+        document.getElementById("loading").style.display = "block";
+        document.getElementById("bookList").style.display = "none";
+
+        // Determine the target currency based on the current state
+        let targetCurrency = "<%= currency === 'NPR' ? 'USD' : 'NPR' %>";
+
+        // Redirect to the /convert route with the desired target currency
+        window.location.href = `/convert?toCurrency=${targetCurrency}`;
+      });
+
+      // Hide loading spinner when page loads
+      window.addEventListener("load", function () {
+        document.getElementById("loading").style.display = "none";
+        document.getElementById("bookList").style.display = "block";
+      });
+    </script>
+  </body>
+</html>
